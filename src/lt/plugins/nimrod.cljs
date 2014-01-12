@@ -5,6 +5,7 @@
             [lt.objs.console :as console]
             [lt.objs.proc :as proc]
             [lt.objs.editor.pool :as pool]
+            [lt.objs.notifos :as notifos]
             [lt.util.load :as load]
             [clojure.string :as string])
   (:require-macros [lt.macros :refer [behavior defui]]))
@@ -40,7 +41,37 @@
   (quote-path (-> @e :info :path)))
 
 (defn call-nimrod [cmd cb]
-  (exec (str nimrod-exe cmd) cb))
+  (exec (str nimrod-exe " " cmd) cb))
+
+(def symbol-types
+  {"skParam"  "v"
+   "skVar"    "v"
+   "skLet"    "v"
+   "skTemp"   "v"
+   "skForVar" "v"
+   "skConst"  "v"
+   "skResult" "v"
+   "skGenericParam" "T"
+   "skType"   "T"
+   "skProc"   "f"
+   "skMethod" "f"
+   "skMacro"  "f"
+   "skIterator"  "f"
+   "skConverter" "f"
+   "skTemplate"  "f"
+   "skField"  "m"
+   "skEnumField" "m"})
+
+(defn idetools-at [op file pos cb]
+  (let [cmd (str "idetools --" op " --track:\"" file ","
+                 (inc (:line pos)) "," (inc (:ch pos)) "\" " file)]
+    (call-nimrod cmd cb)))
+
+(defn idetools [op ed cb]
+  (when (:dirty ed)
+    (prn "NEEDS SABING")
+    (cmd/exec! :save))
+  (idetools-at op (-> @ed :info :path) (editor/->cursor ed) cb))
 
 (defui mark [errors spacing]
   [:div.hintwrapper
@@ -67,6 +98,32 @@
     ;; ensure scroll position is the same as it was when we started
     (.scrollTo (editor/->cm-ed editor) (.-left prev) (.-top prev))))
 
+;;(defn word-at-cursor [editor]
+;;  (editor/->token editor (editor/->cursor editor)))
+
+(defn parse-def-lines [input]
+  (for [ln (string/split-lines input)
+                :let [parts (string/split ln "\t")]
+                :when (= "def" (first parts))]
+    parts))
+
+
+(behavior ::jump-to-definition-at-cursor
+          :triggers #{:editor.jump-to-definition-at-cursor!}
+          :reaction (fn [editor]
+                      (idetools "def" editor
+                                (fn [err stdout stderr]
+                                  (let [defs (parse-def-lines stdout)]
+                                    (if (> (count defs) 0)
+                                      (object/raise lt.objs.jump-stack/jump-stack
+                                                    :jump-stack.push!
+                                                    editor
+                                                    (nth (first defs) 4)
+                                                    {:line (dec (nth (first defs) 5)) :ch 0})
+
+                                      (notifos/set-msg! "Definition not found"
+                                                        {:class "error"})))))))
+
 (behavior ::eval-on-save
           :triggers #{:save}
           :reaction (fn [editor]
@@ -79,14 +136,17 @@
                         (call-nimrod (str "check " (editor-quoted-path editor))
                                      check-results-ready))))
 
+(behavior ::on-eval
+                  :triggers #{:eval}
+                  :reaction (fn [editor]
+                              (object/raise nimrod-lang :eval! {:origin editor})))
+
 (behavior ::eval!
           :triggers #{:eval!}
           :reaction (fn [this event]
-                      ))
+                      (console/error "Evaluating Nimrod is not yet supported")))
 
 (object/object* ::nimrod-lang
-                :tags #{:nimrod.lang}
-                :behaviors [::eval!]
-                :triggers #{:eval!})
+                :tags #{:nimrod.lang})
 
 (def nimrod-lang (object/create ::nimrod-lang))
