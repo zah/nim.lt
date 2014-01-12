@@ -11,6 +11,7 @@
   (:require-macros [lt.macros :refer [behavior defui]]))
 
 (def exec (.-exec (js/require "child_process")))
+(def resolve-path (.-resolve (js/require "path")))
 (def which (.-which (load/node-module "shelljs")))
 
 (def nimrod-exe (or (which "nimrod")
@@ -37,8 +38,21 @@
 (defn quote-path [f]
   (str "\"" f "\""))
 
-(defn editor-quoted-path [e]
-  (quote-path (-> @e :info :path)))
+(defn included-from-range [ed]
+  (editor/range ed {:line 0 :ch 0} {:line 10 :ch 0}))
+
+(defn included-from [ed]
+  (when-let [match (re-find #"(?m)^\#\s*included from ([a-zA-Z_0-9\.\/\\]+)"
+                                                (included-from-range ed))]
+    (nth match 1)))
+
+(defn quoted-main-file [ed]
+  (let [path (-> @ed :info :path)
+        includer (included-from ed)
+        main-file (if includer (resolve-path path ".." includer)
+                                path)]
+    (quote-path main-file)))
+
 
 (defn call-nimrod [cmd cb]
   (exec (str nimrod-exe " " cmd) cb))
@@ -62,16 +76,17 @@
    "skField"  "m"
    "skEnumField" "m"})
 
-(defn idetools-at [op file pos cb]
-  (let [cmd (str "idetools --" op " --track:\"" file ","
-                 (inc (:line pos)) "," (inc (:ch pos)) "\" " file)]
+(defn idetools-at [op tracked-file main-file pos cb]
+  (let [cmd (str "idetools --" op " --track:\"" tracked-file ","
+                 (inc (:line pos)) "," (inc (:ch pos)) "\" " main-file)]
     (call-nimrod cmd cb)))
 
 (defn idetools [op ed cb]
-  (when (:dirty ed)
-    (prn "NEEDS SABING")
+  (when (editor/dirty? ed nil)
     (cmd/exec! :save))
-  (idetools-at op (-> @ed :info :path) (editor/->cursor ed) cb))
+  (let [path (-> @ed :info :path)]
+    (idetools-at op path (quoted-main-file ed) (editor/->cursor ed) cb)))
+
 
 (defui mark [errors spacing]
   [:div.hintwrapper
@@ -101,19 +116,24 @@
 ;;(defn word-at-cursor [editor]
 ;;  (editor/->token editor (editor/->cursor editor)))
 
-(defn parse-def-lines [input]
+(defn parse-structured-lines [marker input]
   (for [ln (string/split-lines input)
                 :let [parts (string/split ln "\t")]
-                :when (= "def" (first parts))]
+                :when (= marker (first parts))]
     parts))
 
+(defn parse-defs [input]
+  (parse-structured-lines "def" input))
+
+(defn parse-suggestions [input]
+  (parse-structured-lines "sug" input))
 
 (behavior ::jump-to-definition-at-cursor
           :triggers #{:editor.jump-to-definition-at-cursor!}
           :reaction (fn [editor]
                       (idetools "def" editor
                                 (fn [err stdout stderr]
-                                  (let [defs (parse-def-lines stdout)]
+                                  (let [defs (parse-defs stdout)]
                                     (if (> (count defs) 0)
                                       (object/raise lt.objs.jump-stack/jump-stack
                                                     :jump-stack.push!
@@ -133,7 +153,7 @@
                                      cm (editor/->cm-ed editor)]
                                  (editor/operation cm #(create-hints editor :nimrod.hints errors))))]
 
-                        (call-nimrod (str "check " (editor-quoted-path editor))
+                        (call-nimrod (str "check " (quoted-main-file editor))
                                      check-results-ready))))
 
 (behavior ::on-eval
