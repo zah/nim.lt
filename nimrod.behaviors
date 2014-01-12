@@ -1,0 +1,5 @@
+{:+ {:app [(:lt.objs.plugins/load-js ["codemirror/nimrod.js" "nimrod_compiled.js"])]
+     :editor.nimrod [:lt.plugins.nimrod/eval-on-save
+                     (:lt.objs.editor/tab-settings false 2 2)]
+     :files [(:lt.objs.files/file-types [{:name "Nimrod" :exts [:nim] :mime "text/x-nimrod" :tags [:editor.nimrod]}])]
+}}
