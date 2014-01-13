@@ -166,7 +166,8 @@ CodeMirror.defineMode("nimrod", function(conf, parserConf) {
       return 'builtin';
 
     if (stream.match(identifiers)) {
-      if (state.lastToken.match(/proc|iterator|macro|template|class|converter/)) {
+      if (state.lastToken != null &&
+          state.lastToken.match(/proc|iterator|macro|template|class|converter/)) {
         return 'def';
       }
 
