@@ -7,6 +7,7 @@
             [lt.objs.editor.pool :as pool]
             [lt.objs.notifos :as notifos]
             [lt.util.load :as load]
+            [lt.plugins.auto-complete :as codeassist]
             [clojure.string :as string])
   (:require-macros [lt.macros :refer [behavior defui]]))
 
@@ -126,7 +127,52 @@
   (parse-structured-lines "def" input))
 
 (defn parse-suggestions [input]
-  (parse-structured-lines "sug" input))
+  (map #(string/split (nth % 2) ".")
+       (parse-structured-lines "sug" input)))
+
+(defn match-char [input ch]
+  (= (first (.-text input)) ch))
+
+(defn suggestion-prefix [ed]
+  (let [c (editor/->cursor ed)
+        dot (:nimrod_dot @ed)]
+    (and (= (:line c) (:line dot))
+         (= (- (:ch c) (:ch dot)) 2)
+         (editor/range ed dot c))))
+
+(defn match-suggestions [ed prefix]
+  (into-array
+    (for [s (:nimrod.suggestions @ed)
+          :let [sym (if (> (count s) 1) (second s) (first s))]
+          :when (.startsWith sym prefix)]
+      #js {:completion sym})))
+
+(behavior ::autocomplete-on-dot
+          :triggers #{:input}
+          :type :user
+          :desc "Nimrod: Use idetools for completion"
+          :reaction (fn [ed _ ch]
+                      (if (match-char ch ".")
+                        (do
+                          (object/merge! ed {:nimrod_dot (editor/->cursor ed)})
+                          (idetools "suggest" ed
+                                    (fn [err stdout stderr]
+                                      (object/merge! ed {:nimrod.suggestions
+                                                         (parse-suggestions stdout)})
+                                      (object/raise ed :hint-tokens (match-suggestions
+                                                                     ed
+                                                                     ""))
+                                      (object/raise ed :hint)
+
+                                      )))
+
+                        (do
+                          (when-let [prefix (suggestion-prefix ed)]
+                            (let [suggestions (match-suggestions ed prefix)]
+                              (prn suggestions)
+                              ;;(object/raise ed :hint-tokens suggestions)
+                              ;;(object/raise ed :hint)
+                              ))))))
 
 (behavior ::jump-to-definition-at-cursor
           :triggers #{:editor.jump-to-definition-at-cursor!}
