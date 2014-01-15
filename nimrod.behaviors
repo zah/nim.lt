@@ -4,5 +4,6 @@
 
      :editor.nimrod [:lt.plugins.nimrod/eval-on-save
                      :lt.plugins.nimrod/jump-to-definition-at-cursor
+                     :lt.plugins.nimrod/autocomplete-on-dot
                      (:lt.objs.editor/tab-settings false 2 2)]
 }}
