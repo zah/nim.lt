@@ -12,6 +12,7 @@
   (:require-macros [lt.macros :refer [behavior defui]]))
 
 (def exec (.-exec (js/require "child_process")))
+(def spawn (.-spawn (js/require "child_process")))
 (def resolve-path (.-resolve (js/require "path")))
 (def which (.-which (load/node-module "shelljs")))
 
@@ -194,3 +195,31 @@
                 :tags #{:nimrod.lang})
 
 (def nimrod-lang (object/create ::nimrod-lang))
+
+(defn execute-command [cmd args opt]
+  (let [proc (spawn cmd args)]
+    (.stdout.on proc "data" (.-on_stdout opt))
+    (.stderr.on proc "data" (.-on_stderr opt))
+    (when-let [exit (.-on-exit opt)]
+      (.on proc "exit" exit))
+    proc))
+
+(cmd/command
+ {:command :nimrod.compile-and-run
+  :desc "Nimrod: Compile and Run"
+  :exec (fn []
+          (let [ed (pool/last-active)]
+            (execute-command "nimrod"
+                             #js ["-r" "--verbosity:0" "c" (quoted-main-file ed)]
+                             #js {:on_stdout #(console/log (str %))
+                                  :on_stderr #(console/error (str %))})))})
+
+(cmd/command
+ {:command :nimrod.nimrod-i
+  :desc "Nimrod: Run in Interpreter"
+  :exec (fn []
+          (let [ed (pool/last-active)]
+            (execute-command "nimrod"
+                             #js ["i" (quoted-main-file ed)]
+                             #js {:on_stdout #(console/log (str %))
+                                  :on_stderr #(console/error (str %))})))})
