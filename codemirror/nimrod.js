@@ -25,7 +25,7 @@ CodeMirror.defineMode("nimrod", function(conf, parserConf) {
                         'template', 'try', 'tuple', 'type',
                         'using',
                         'var',
-                        'when', 'while', 'with', 'without',
+                        'when', 'while', 'with',
                         'yield',
 
                         // keyword operators
@@ -35,40 +35,29 @@ CodeMirror.defineMode("nimrod", function(conf, parserConf) {
   var commonBuiltins = ["int", "int8", "int16", "int32", "int64", "uint", "uint8", "uint16",
                         "uint32", "uint64", "float", "float32", "float64", "bool", "char",
                         "string", "cstring", "pointer", "range", "array", "openarray",
-                        "seq", "set", "Byte", "Natural", "Positive", "TObject", "PObject",
-                        "Conversion", "TResult", "TAddress", "BiggestInt", "BiggestFloat",
+                        "seq", "set", "Byte", "Natural", "Positive", "object", "BiggestInt", "BiggestFloat",
                         "cchar", "cschar", "cshort", "cint", "csize", "cuchar", "cushort",
                         "clong", "clonglong", "cfloat", "cdouble", "clongdouble", "cuint",
-                        "culong", "culonglong", "cchar", "cstringArray", "TEndian", "PFloat32",
-                        "PFloat64", "PInt64", "PInt32", "TGC_Strategy", "TFile", "TFileMode",
-                        "TFileHandle", "isMainModule", "CompileDate", "CompileTime", "NimrodVersion",
-                        "NimrodMajor", "NimrodMinor", "NimrodPatch", "cpuEndian", "hostOS", "hostCPU",
+                        "culong", "culonglong", "cchar", "cstringArray", "Endian", "float32",
+                        "float64", "int64", "int32", "File", "FileMode",
+                        "FileHandle", "isMainModule", "CompileDate", "CompileTime", "NimVersion",
+                        "NimMajor", "NimMinor", "NimPatch", "cpuEndian", "hostOS", "hostCPU",
                         "inf", "neginf", "nan", "QuitSuccess", "QuitFailure", "dbgLineHook", "stdin",
                         "stdout", "stderr", "defined", "new", "high", "low", "sizeof", "succ", "pred",
-                        "inc", "dec", "newSeq", "len", "incl", "excl", "card", "ord", "chr", "ze",
-                        "ze64", "toU8", "toU16", "toU32", "abs", "min", "max", "add", "repr", "contains",
+                        "inc", "dec", "newSeq", "len", "incl", "excl", "card", "ord", "chr", "abs", 
+                        "min", "max", "add", "repr", "contains", "echo",
                         "toFloat", "toBiggestFloat", "toInt", "toBiggestInt", "addQuitProc", "copy",
                         "setLen", "newString", "zeroMem", "copyMem", "moveMem", "equalMem", "alloc",
                         "alloc0", "realloc", "dealloc", "setLen", "assert", "swap", "getRefcount",
                         "getCurrentException", "Msg", "getOccupiedMem", "getFreeMem", "getTotalMem",
-                        "isNil", "seqToPtr", "find", "pop", "GC_disable", "GC_enable", "GC_fullCollect",
-                        "GC_setStrategy", "GC_enableMarkAnd", "Sweep", "GC_disableMarkAnd", "Sweep",
-                        "GC_getStatistics", "GC_ref", "GC_ref", "GC_ref", "GC_unref", "GC_unref",
-                        "GC_unref", "quit", "OpenFile", "OpenFile", "CloseFile", "EndOfFile",
-                        "readChar", "FlushFile", "readFile", "write", "readLine", "writeln",
-                        "writeln", "getFileSize", "ReadBytes", "ReadChars", "readBuffer",
+                        "isNil", "seqToPtr", "find", "pop",  "quit", "openFile",
+                        "closeFile", "endOfFile",
+                        "readChar", "flushFile", "readFile", "write", "readLine", "writeLine",
+                        "getFileSize", "ReadBytes", "ReadChars", "readBuffer",
                         "writeBytes", "writeChars", "writeBuffer", "setFilePos", "getFilePos",
                         "fileHandle", "countdown", "countup", "items", "lines",
-                        "true", "false",
-
-                        // exceptions
-                        "E_Base", "EAsynch", "ESynch", "ESystem", "EIO", "EOS", "ERessourceExhausted",
-                        "EArithmetic", "EDivByZero", "EOverflow", "EAccessViolation", "EAssertionFailed",
-                        "EControlC", "EInvalidValue", "EOutOfMemory", "EInvalidIndex", "EInvalidField",
-                        "EOutOfRange", "EStackOverflow", "ENoExceptionToReraise", "EInvalidObjectAssignment",
-                        "EInvalidObject", "EInvalidLibrary", "EInvalidKey", "EInvalidObjectConversion",
-                        "EFloatingPoint", "EFloatInvalidOp", "EFloatDivByZero", "EFloatOverflow",
-                        "EFloatInexact", "EDeadThrea"];
+                        "true", "false"
+                       ];
 
   if(parserConf.extra_keywords != undefined)
     commonkeywords = commonkeywords.concat(parserConf.extra_keywords);
