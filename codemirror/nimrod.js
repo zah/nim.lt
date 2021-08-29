@@ -16,7 +16,7 @@ CodeMirror.defineMode("nimrod", function(conf, parserConf) {
                         'finally', 'for', 'from',
                         'generic',
                         'if', 'import', 'include', 'interface', 'iterator',
-                        'lambda', 'let',
+                        'let',
                         'macro', 'method', 'mixin', 'nil',
                         'object', 'out',
                         'proc', 'ptr',
@@ -55,7 +55,7 @@ CodeMirror.defineMode("nimrod", function(conf, parserConf) {
                         "readChar", "flushFile", "readFile", "write", "readLine", "writeLine",
                         "getFileSize", "ReadBytes", "ReadChars", "readBuffer",
                         "writeBytes", "writeChars", "writeBuffer", "setFilePos", "getFilePos",
-                        "fileHandle", "countdown", "countup", "items", "lines",
+                        "countdown", "countup", "items", "lines",
                         "true", "false"
                        ];
 
